@@ -1,0 +1,225 @@
+{% extends 'base.html' %}
+{% load widget_tweaks %}
+
+{% block title %}
+  {% if form.instance.pk %}Редактировать договор{% else %}Добавить договор{% endif %}
+{% endblock %}
+
+{% block extra_head %}
+<style>
+  /* Центрирование и ограничение ширины */
+  .form-wrapper {
+    max-width: 850px;
+    margin: 2rem auto;
+  }
+
+  h1.form-title {
+    font-size: 2rem;
+    font-weight: 800;
+    color: var(--text);
+    margin-bottom: 2rem;
+    text-align: center;
+  }
+
+  /* Стилизация карточки формы */
+  .form-card {
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius);
+    padding: 2.5rem;
+    box-shadow: var(--shadow);
+  }
+
+  /* Группировка полей */
+  .form-section-title {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--primary);
+    margin-bottom: 1.5rem;
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 0.5rem;
+  }
+
+  /* Исправление высоты Select2 под Bootstrap */
+  .select2-container--default .select2-selection--single {
+    height: 48px !important;
+    padding: 8px 12px !important;
+    border-radius: var(--radius) !important;
+    border: 2px solid var(--border-color) !important;
+    background-color: rgba(255, 255, 255, 0.1) !important;
+  }
+  
+  body[data-theme="dark"] .select2-container--default .select2-selection--single {
+    background-color: #111114 !important;
+  }
+
+  .select2-container--default .select2-selection--single .select2-selection__rendered {
+    line-height: 28px !important;
+    color: var(--text) !important;
+  }
+
+  .select2-container--default .select2-selection--single .select2-selection__arrow {
+    height: 46px !important;
+  }
+
+  /* Кнопки в ряд */
+  .form-actions {
+    display: flex;
+    gap: 1rem;
+    justify-content: flex-end;
+    margin-top: 2rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--border-color);
+  }
+
+  /* ИСПРАВЛЕННЫЕ ЧЕКБОКСЫ: Добавлен отступ от окошка к тексту */
+  .form-check {
+    display: flex;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    padding-left: 0;
+  }
+
+  .form-check-input {
+    width: 1.4rem;
+    height: 1.4rem;
+    margin: 0 12px 0 0 !important; /* Отступ 12px справа от квадратика */
+    cursor: pointer;
+    flex-shrink: 0;
+    border-radius: 4px;
+  }
+
+  .form-check-label {
+    cursor: pointer;
+    font-weight: 500;
+    color: var(--text);
+    line-height: 1.2;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="form-wrapper">
+  <h1 class="form-title">
+    {% if form.instance.pk %}
+      <i class="fa-solid fa-pen-to-square me-2"></i>Редактировать договор
+    {% else %}
+      <i class="fa-solid fa-file-contract me-2"></i>Добавить договор
+    {% endif %}
+  </h1>
+
+  <div class="form-card">
+    <form method="post" enctype="multipart/form-data" novalidate id="dogovorForm">
+      {% csrf_token %}
+      
+      {% if form.non_field_errors %}
+        <div class="alert alert-danger">
+          {% for error in form.non_field_errors %}{{ error }}{% endfor %}
+        </div>
+      {% endif %}
+
+      <!-- Секция: Стороны договора -->
+      <div class="form-section-title">Информация о сторонах</div>
+      
+      <div class="mb-4">
+        <label class="form-label required">{{ form.abiturient.label }}</label>
+        {{ form.abiturient }}
+        <div class="form-text">Выберите абитуриента, и номер договора сформируется автоматически.</div>
+        {% for error in form.abiturient.errors %}<div class="text-danger">{{ error }}</div>{% endfor %}
+      </div>
+
+      <div class="mb-4">
+        <label class="form-label required">{{ form.roditel_zakazchik.label }}</label>
+        {{ form.roditel_zakazchik }}
+        {% for error in form.roditel_zakazchik.errors %}<div class="text-danger">{{ error }}</div>{% endfor %}
+      </div>
+
+      <!-- Секция: Реквизиты документа -->
+      <div class="form-section-title">Реквизиты договора</div>
+      
+      <div class="row">
+        <div class="col-md-6 mb-3">
+          <label class="form-label required">{{ form.number.label }}</label>
+          {{ form.number|add_class:"form-control" }}
+          {% for error in form.number.errors %}<div class="text-danger">{{ error }}</div>{% endfor %}
+        </div>
+        <div class="col-md-6 mb-3">
+          <label class="form-label required">{{ form.date_of_conclusion.label }}</label>
+          {{ form.date_of_conclusion|add_class:"form-control" }}
+          {% for error in form.date_of_conclusion.errors %}<div class="text-danger">{{ error }}</div>{% endfor %}
+        </div>
+      </div>
+
+      <!-- Секция: Дополнительно -->
+      <div class="form-section-title">Дополнительные условия</div>
+      
+      <div class="row">
+        <div class="col-md-6">
+          <div class="form-check">
+            {{ form.maternity_capital|add_class:"form-check-input" }}
+            <label class="form-check-label" for="{{ form.maternity_capital.id_for_label }}">
+              {{ form.maternity_capital.label }}
+            </label>
+          </div>
+        </div>
+        <div class="col-md-6">
+          <div class="form-check">
+            {{ form.credit|add_class:"form-check-input" }}
+            <label class="form-check-label" for="{{ form.credit.id_for_label }}">
+              {{ form.credit.label }}
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <!-- Автоматический вывод остальных полей -->
+      {% for field in form %}
+        {% if field.name not in 'abiturient roditel_zakazchik number date_of_conclusion maternity_capital credit budget is_paid pay_type payment_form' %}
+          <div class="mb-3">
+            <label class="form-label">{{ field.label }}</label>
+            {{ field|add_class:"form-control" }}
+            {% for error in field.errors %}<div class="text-danger">{{ error }}</div>{% endfor %}
+          </div>
+        {% endif %}
+      {% endfor %}
+
+      <!-- Кнопки -->
+      <div class="form-actions">
+        <a href="{% url 'dogovor_list' %}" class="btn btn-outline-secondary">
+          <i class="fa-solid fa-xmark me-2"></i>Отмена
+        </a>
+        <button type="submit" class="btn btn-primary">
+          <i class="fa-solid fa-check me-2"></i>Сохранить договор
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+  {{ form.media }}
+  <script>
+$(document).ready(function() {
+    $('#id_abiturient').on('change', function() {
+        var abitId = $(this).val();
+        if (abitId) {
+            $.ajax({
+                url: '/api/abit_info/' + abitId + '/', // ИСПОЛЬЗУЕМ НОВЫЙ URL
+                success: function(data) {
+                    var now = new Date();
+                    var day = ("0" + now.getDate()).slice(-2);
+                    var month = ("0" + (now.getMonth() + 1)).slice(-2);
+                    
+                    // Генерируем номер: День-Месяц-КодСпец-ID
+                    var generatedNumber = day + "-" + month + "-" + data.spec_code + "-" + data.abit_id;
+                    
+                    // Подставляем в поле
+                    $('#id_number').val(generatedNumber);
+                }
+            });
+        }
+    });
+});
+</script>
+{% endblock %}

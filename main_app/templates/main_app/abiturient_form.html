@@ -1,0 +1,390 @@
+{% extends 'base.html' %}
+{% load crispy_forms_tags %}
+{% load widget_tweaks %}
+
+{% block title %}
+  {% if object %}Редактировать абитуриента{% else %}Добавить абитуриента{% endif %}
+{% endblock %}
+
+{% block extra_head %}
+<link href="https://cdn.jsdelivr.net/npm/suggestions-jquery@21.12.0/dist/css/suggestions.min.css" rel="stylesheet" />
+
+<style>
+  /* === 1. Основной контейнер и заголовки === */
+  .form-wrapper {
+    max-width: 900px;
+    margin: 1.5rem auto 3rem;
+  }
+
+  h1.form-title {
+    font-size: 2rem;
+    font-weight: 800;
+    color: var(--text);
+    margin-bottom: 2rem;
+    text-align: center;
+  }
+
+  /* === 2. Карточки секций (form-card) === */
+  .form-card {
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius);
+    padding: 2.5rem;
+    box-shadow: var(--shadow);
+    margin-bottom: 1.5rem;
+    transition: background var(--transition), border-color var(--transition);
+  }
+
+  /* === 3. Поля ввода (Общие стили) === */
+  .form-control, .form-select {
+    padding: 0.75rem 1.1rem;
+    border-radius: var(--radius);
+    background-color: rgba(var(--primary-rgb), 0.02);
+    border: 2px solid var(--border-color);
+    color: var(--text);
+    transition: all var(--transition);
+  }
+
+  /* Состояние фокуса */
+  .form-control:focus, .form-select:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 4px rgba(var(--primary-rgb), 0.15);
+    background-color: var(--card-bg);
+    color: var(--text);
+  }
+
+  /* Стилизация Placeholder */
+  .form-control::placeholder {
+    color: var(--text-muted);
+    opacity: 0.7;
+  }
+
+  /* === 4. ТЕМНАЯ ТЕМА (Жесткие фиксы) === */
+  [data-theme="dark"] .form-control, 
+  [data-theme="dark"] .form-select {
+    background-color: #111114 !important;
+    color: #ffffff !important;
+    border-color: rgba(255, 255, 255, 0.15) !important;
+    color-scheme: dark; /* Белые иконки календаря и стрелки */
+  }
+
+  [data-theme="dark"] .form-control:focus {
+    background-color: #16161a !important;
+    border-color: var(--primary) !important;
+  }
+
+  [data-theme="dark"] .form-control::placeholder {
+    color: #888 !important;
+    opacity: 1;
+  }
+
+  /* Фикс автозаполнения браузером в темной теме */
+  [data-theme="dark"] input:-webkit-autofill,
+  [data-theme="dark"] input:-webkit-autofill:hover, 
+  [data-theme="dark"] input:-webkit-autofill:focus {
+    -webkit-text-fill-color: #ffffff !important;
+    -webkit-box-shadow: 0 0 0px 1000px #1a1a1e inset !important;
+    transition: background-color 5000s ease-in-out 0s;
+  }
+
+  /* === 5. Элементы секций === */
+  .form-section-title {
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: var(--primary);
+    margin-bottom: 1.8rem;
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 0.7rem;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .form-section-subtitle {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--text);
+    margin: 1.5rem 0 1rem 0;
+    padding-left: 12px;
+    border-left: 4px solid var(--primary);
+  }
+
+  /* === 6. Чекбоксы и документы === */
+  .form-check {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding-left: 0;
+    margin-bottom: 0.5rem;
+  }
+
+  .form-check-input {
+    width: 1.35rem;
+    height: 1.35rem;
+    cursor: pointer;
+    margin-top: 0; /* Центрирование относительно текста */
+    flex-shrink: 0;
+  }
+
+  .form-check-label {
+    cursor: pointer;
+    font-weight: 600;
+    color: var(--text);
+    user-select: none;
+  }
+
+  .document-row {
+    background: rgba(var(--primary-rgb), 0.04);
+    padding: 1.5rem;
+    border-radius: var(--radius);
+    margin-bottom: 1rem;
+    border: 2px dashed var(--border-color);
+  }
+
+  /* === 7. Кнопки действий === */
+  .form-actions {
+    display: flex;
+    gap: 1.5rem;
+    justify-content: center;
+    margin: 3rem 0;
+  }
+
+  /* === 8. Подсказки DaData (Suggestions) === */
+  .suggestions-suggestions {
+    background: var(--card-bg) !important;
+    color: var(--text) !important;
+    border: 1px solid var(--border-color) !important;
+    border-radius: var(--radius) !important;
+    box-shadow: var(--shadow) !important;
+    font-family: inherit !important;
+    z-index: 9999 !important;
+  }
+
+  .suggestions-suggestion:hover {
+    background: var(--primary-light) !important;
+    color: #fff !important;
+  }
+
+  [data-theme="dark"] .suggestions-suggestions {
+    background: #1a1a1e !important;
+    border-color: #333 !important;
+  }
+
+  [data-theme="dark"] .suggestions-hint { color: #666 !important; }
+  [data-theme="dark"] .suggestions-promo { display: none !important; }
+
+  /* === 9. Адаптивность === */
+  @media (max-width: 768px) {
+    .form-card {
+      padding: 1.5rem;
+    }
+    
+    h1.form-title {
+      font-size: 1.6rem;
+    }
+
+    .form-actions {
+      flex-direction: column-reverse; /* Кнопка сохранить сверху на мобилках */
+      gap: 1rem;
+    }
+
+    .form-actions .btn {
+      width: 100%;
+      padding: 0.8rem;
+    }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="form-wrapper">
+  <h1 class="form-title">
+    {% if object %}
+      <i class="fa-solid fa-user-pen me-2"></i>Редактировать
+    {% else %}
+      <i class="fa-solid fa-user-plus me-2"></i>Новый абитуриент
+    {% endif %}
+  </h1>
+
+  <form method="post" enctype="multipart/form-data" novalidate>
+    {% csrf_token %}
+
+    {% if form.errors or mother_form.errors or father_form.errors or health_form.errors or formset.errors %}
+      <div class="alert alert-danger shadow-sm mb-4">
+        <i class="fa-solid fa-circle-exclamation me-2"></i> Ошибки в форме. Пожалуйста, проверьте введённые данные.
+      </div>
+    {% endif %}
+
+     <!-- 1. Основная информация -->
+    <div class="form-card">
+      <div class="form-section-title"><i class="fa-solid fa-id-card"></i> Личные данные</div>
+      
+      <div class="mb-3">
+        <label class="form-label fw-bold">ФИО абитуриента <span class="text-danger">*</span></label>
+        {{ form.fio|add_class:"form-control"|attr:"placeholder:Иванов Иван Иванович" }}
+        {% if form.fio.errors %}<div class="small text-danger mt-1">{{ form.fio.errors.0 }}</div>{% endif %}
+      </div>
+
+      <div class="row">
+        <div class="col-md-6 mb-3">
+          <label class="form-label fw-bold">Дата рождения <span class="text-danger">*</span></label>
+          {{ form.date_of_birth|add_class:"form-control"|attr:"type:date" }}
+        </div>
+        <div class="col-md-6 mb-3">
+          <label class="form-label fw-bold">Класс поступления <span class="text-danger">*</span></label>
+          {{ form.class_of_entry|add_class:"form-select" }}
+        </div>
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label fw-bold">Специальность</label>
+        {{ form.specialnost|add_class:"form-select" }}
+      </div>
+
+      <div class="row">
+        <div class="col-md-6 mb-3">
+          <label class="form-label fw-bold">Телефон <span class="text-danger">*</span></label>
+          {{ form.phone|add_class:"form-control"|attr:"placeholder:+7 (___) ___-__-__" }}
+        </div>
+        <div class="col-md-6 mb-3">
+          <label class="form-label fw-bold">Email <span class="text-danger">*</span></label>
+          {{ form.email|add_class:"form-control"|attr:"placeholder:example@mail.ru" }}
+        </div>
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label fw-bold">Адрес проживания</label>
+        {{ form.address|add_class:"form-control"|attr:"id:id_address" }}
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label fw-bold">Хобби</label>
+        {{ form.hobby|add_class:"form-control"|attr:"rows:2" }}
+      </div>
+
+      <div class="form-check">
+        {{ form.is_guardianship|add_class:"form-check-input" }}
+        <label class="form-check-label fw-bold" for="{{ form.is_guardianship.id_for_label }}">
+          Опекунство / Сирота
+        </label>
+      </div>
+    </div>
+
+    <!-- 2. Родители -->
+    <div class="form-card">
+      <div class="form-section-title"><i class="fa-solid fa-users"></i> Родители / Представители</div>
+      
+      <div class="row">
+        <div class="col-md-6">
+          <div class="form-section-subtitle">Мать</div>
+          {% for field in mother_form %}
+            <div class="mb-2">
+              <label class="small text-muted mb-1">{{ field.label }}</label>
+              {% if "city" in field.name or "address" in field.name %}
+                {{ field|add_class:"form-control form-control-sm dadata-city" }}
+              {% else %}
+                {{ field|add_class:"form-control form-control-sm" }}
+              {% endif %}
+            </div>
+          {% endfor %}
+        </div>
+        <div class="col-md-6">
+          <div class="form-section-subtitle">Отец</div>
+          {% for field in father_form %}
+            <div class="mb-2">
+              <label class="small text-muted mb-1">{{ field.label }}</label>
+              {% if "city" in field.name or "address" in field.name %}
+                {{ field|add_class:"form-control form-control-sm dadata-city" }}
+              {% else %}
+                {{ field|add_class:"form-control form-control-sm" }}
+              {% endif %}
+            </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+    </div>
+
+    <!-- 3. Здоровье -->
+    <div class="form-card">
+      <div class="form-section-title"><i class="fa-solid fa-heart-pulse"></i> Здоровье</div>
+      <div class="row">
+        {% for field in health_form %}
+          <div class="{% if field.field.widget.input_type == 'checkbox' %}col-md-6{% else %}col-12{% endif %} mb-3">
+            {% if field.field.widget.input_type == "checkbox" %}
+              <div class="form-check">
+                {{ field|add_class:"form-check-input" }}
+                <label class="form-check-label fw-bold">{{ field.label }}</label>
+              </div>
+            {% else %}
+              <label class="form-label small fw-bold">{{ field.label }}</label>
+              {{ field|add_class:"form-control" }}
+            {% endif %}
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+
+     <!-- 4. Документы -->
+    <div class="form-card">
+      <div class="form-section-title"><i class="fa-solid fa-file-arrow-up"></i> Документы</div>
+      {{ formset.management_form }}
+      <div id="document-formset">
+        {% for doc_form in formset %}
+          <div class="document-row">
+            {% for hidden in doc_form.hidden_fields %}{{ hidden }}{% endfor %}
+            <div class="row align-items-center">
+              <div class="col-md-8">
+                {{ doc_form.scan|add_class:"form-control" }}
+              </div>
+              {% if doc_form.instance.pk %}
+                <div class="col-md-4 text-end">
+                  <div class="form-check d-inline-flex">
+                    {{ doc_form.DELETE|add_class:"form-check-input" }}
+                    <label class="form-check-label text-danger fw-bold">Удалить</label>
+                  </div>
+                </div>
+              {% endif %}
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <div class="form-actions d-flex gap-3 justify-content-center mt-4 mb-5">
+      <a href="{% url 'abiturient_list' %}" class="btn btn-outline-secondary px-4">
+        Отмена
+      </a>
+      <button type="submit" class="btn btn-primary px-5 shadow">
+        <i class="fa-solid fa-save me-2"></i> Сохранить
+      </button>
+    </div>
+  </form>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<!-- jQuery (необходим для DaData) -->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/suggestions-jquery@21.12.0/dist/js/jquery.suggestions.min.js"></script>
+<script>
+    $(document).ready(function() {
+        var token = "d689ced837e83424219f3d3c5dfeadd1c93cfb93";
+
+        // 1. Полный адрес для абитуриента
+        $("#id_address").suggestions({
+            token: token,
+            type: "ADDRESS"
+        });
+
+        // 2. Только города/населенные пункты для родителей
+        $(".dadata-city").suggestions({
+            token: token,
+            type: "ADDRESS",
+            /* Ограничиваем поиск только городами и поселками (без улиц) */
+            bounds: "city-settlement"
+        });
+    });
+</script>
+{% endblock %}

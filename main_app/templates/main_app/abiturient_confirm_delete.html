@@ -1,0 +1,166 @@
+{% extends 'base.html' %}
+
+{% block title %}Удалить абитуриента{% endblock %}
+
+{% block extra_head %}
+<style>
+/* Центрирование контейнера на странице */
+.modal-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 70vh;
+  padding: 1rem;
+}
+
+/* Контейнер модального окна */
+.modal-container {
+  max-width: 500px;
+  width: 100%;
+  background: var(--card-bg); /* Переменная из base.html */
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius);
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
+  padding: 2.5rem;
+  text-align: center;
+  animation: modalIn 0.3s ease-out;
+}
+
+/* Иконка предупреждения */
+.warning-icon {
+  font-size: 4rem;
+  color: #ef4444;
+  margin-bottom: 1.5rem;
+  display: inline-block;
+}
+
+/* Заголовок */
+.modal-header-text {
+  font-size: 1.75rem;
+  font-weight: 800;
+  margin-bottom: 1rem;
+  color: var(--text);
+  border: none;
+  justify-content: center;
+}
+
+/* Тело модального окна */
+.modal-body-text {
+  font-size: 1.1rem;
+  color: var(--text-muted);
+  line-height: 1.6;
+  margin-bottom: 2rem;
+}
+
+.modal-body-text strong {
+  color: var(--text);
+  font-size: 1.2rem;
+  display: block;
+  margin-top: 0.5rem;
+}
+
+/* Группа кнопок */
+.button-group {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+}
+
+.btn {
+  padding: 0.8rem 1.8rem;
+  font-weight: 700;
+  border-radius: 12px;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 140px;
+}
+
+/* Кнопка удаления */
+.btn-delete {
+  background-color: #ef4444;
+  color: #fff;
+  border: none;
+}
+
+.btn-delete:hover {
+  background-color: #dc2626;
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(239, 68, 68, 0.3);
+  color: #fff;
+}
+
+/* Кнопка отмены */
+.btn-cancel {
+  background-color: rgba(139, 92, 246, 0.1);
+  color: var(--primary);
+  border: 1px solid var(--border-color);
+  text-decoration: none;
+}
+
+.btn-cancel:hover {
+  background-color: var(--border-color);
+  color: var(--text);
+  text-decoration: none;
+  transform: translateY(-2px);
+}
+
+/* ТЕМНАЯ ТЕМА */
+body[data-theme="dark"] .modal-container {
+  background: #1e1e2d; /* Темный фон карточки */
+}
+
+body[data-theme="dark"] .btn-cancel {
+  background: rgba(255, 255, 255, 0.05);
+  color: #a78bfa;
+}
+
+/* Анимация */
+@keyframes modalIn {
+  from { opacity: 0; transform: scale(0.95) translateY(10px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+/* Для мобильных устройств */
+@media (max-width: 480px) {
+  .button-group {
+    flex-direction: column;
+  }
+  .btn {
+    width: 100%;
+  }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="modal-wrapper">
+  <div class="modal-container">
+    <div class="warning-icon">
+      <i class="fa-solid fa-circle-exclamation"></i>
+    </div>
+    
+    <div class="modal-header-text">
+      Удаление записи
+    </div>
+    
+    <div class="modal-body-text">
+      Вы действительно хотите безвозвратно удалить абитуриента?
+      <strong>{{ object.fio }}</strong>
+    </div>
+
+    <form method="post" novalidate>
+      {% csrf_token %}
+      <div class="button-group">
+        <a href="{% url 'abiturient_list' %}" class="btn btn-cancel">
+          Отмена
+        </a>
+        <button type="submit" class="btn btn-delete">
+          <i class="fa-solid fa-trash-can me-2"></i> Удалить
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

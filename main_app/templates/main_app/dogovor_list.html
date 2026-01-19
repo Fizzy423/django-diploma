@@ -1,0 +1,308 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Список договоров{% endblock %}
+
+{% block extra_head %}
+<style>
+  /* === Основной контейнер === */
+  .form-wrapper {
+    max-width: 1200px;
+    margin: 1rem auto 2rem;
+  }
+
+  h1.form-title {
+    font-size: 2rem;
+    font-weight: 800;
+    color: var(--text);
+    margin-bottom: 1.5rem;
+    text-align: center;
+  }
+
+  /* === Верхняя панель действий === */
+  .list-toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+
+  /* === Стилизация таблицы-карточки === */
+  .table-container {
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius);
+    padding: 1rem;
+    box-shadow: var(--shadow);
+  }
+
+  .custom-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0 10px;
+  }
+
+  .custom-table thead th {
+    font-size: 0.8rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: var(--primary);
+    padding: 0.5rem 1rem;
+    border: none;
+    letter-spacing: 1px;
+  }
+
+  .custom-table tbody tr {
+    transition: transform 0.2s ease;
+  }
+
+  .custom-table tbody td {
+    background: rgba(var(--primary-rgb), 0.04); 
+    padding: 1rem;
+    border-top: 1px solid var(--border-color);
+    border-bottom: 1px solid var(--border-color);
+    color: var(--text);
+  }
+
+  /* Закругление углов для строк */
+  .custom-table tbody td:first-child {
+    border-left: 1px solid var(--border-color);
+    border-radius: 12px 0 0 12px;
+  }
+  .custom-table tbody td:last-child {
+    border-right: 1px solid var(--border-color);
+    border-radius: 0 12px 12px 0;
+  }
+
+  .custom-table tbody tr:hover {
+    transform: translateY(-3px);
+  }
+
+  .custom-table tbody tr:hover td {
+    background: rgba(var(--primary-rgb), 0.1);
+    border-color: var(--primary);
+  }
+
+  /* Ссылки */
+  .detail-link {
+    font-weight: 700;
+    color: var(--text);
+    text-decoration: none;
+    display: inline-block;
+  }
+  .detail-link:hover { color: var(--primary); }
+
+  /* Бейджи для условий */
+  .badge-condition {
+    background: var(--primary);
+    color: white;
+    padding: 2px 8px;
+    border-radius: 6px;
+    font-size: 0.75rem;
+    font-weight: 800;
+    margin-left: 2px;
+    cursor: help;
+  }
+
+  /* === Кнопки действий === */
+  .btn-action {
+    width: 36px;
+    height: 36px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 10px;
+    transition: 0.2s;
+  }
+
+  .btn-edit { background: rgba(var(--primary-rgb), 0.1); color: var(--primary) !important; }
+  .btn-edit:hover { background: var(--primary); color: white !important; }
+
+  .btn-delete { background: rgba(239, 68, 68, 0.1); color: #ef4444 !important; }
+  .btn-delete:hover { background: #ef4444; color: white !important; }
+
+  /* ТЕМНАЯ ТЕМА */
+  [data-theme="dark"] .custom-table tbody td {
+    background: rgba(255, 255, 255, 0.03);
+  }
+
+  /* Пагинация */
+  .pagination .page-link {
+    background: var(--card-bg);
+    color: var(--text);
+    border: 1px solid var(--border-color);
+    margin: 0 3px;
+    border-radius: 8px;
+    padding: 8px 16px;
+  }
+
+  .pagination .page-item.active .page-link {
+    background: var(--primary);
+    border-color: var(--primary);
+    color: white;
+  }
+
+  /* Адаптивность для мобильных */
+  @media (max-width: 768px) {
+    .custom-table thead { display: none; }
+    .custom-table tbody td { 
+      display: block; 
+      text-align: left !important; 
+      border: none; 
+      padding: 0.5rem 1rem; 
+    }
+    .custom-table tbody td:first-child { 
+      border-top: 1px solid var(--border-color); 
+      border-radius: 12px 12px 0 0; 
+      padding-top: 1rem; 
+      background: rgba(var(--primary-rgb), 0.08);
+    }
+    .custom-table tbody td:last-child { 
+      border-bottom: 1px solid var(--border-color); 
+      border-radius: 0 0 12px 12px; 
+      padding-bottom: 1rem; 
+    }
+    .custom-table tbody tr:hover { transform: none; }
+  }
+
+  /* === Исправления для темной темы и читаемости === */
+  
+  /* Универсальный приглушенный текст, адаптивный к теме */
+  .theme-muted {
+    color: var(--text) !important;
+    opacity: 0.6;
+  }
+
+  /* Стили для пустого состояния */
+  .empty-state-icon {
+    color: var(--text);
+    opacity: 0.3;
+    margin-bottom: 1rem;
+  }
+
+  [data-theme="dark"] .empty-state-icon {
+    opacity: 0.5;
+  }
+
+  .empty-state-text {
+    color: var(--text);
+    opacity: 0.7;
+    margin-bottom: 1.5rem;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="form-wrapper">
+  <h1 class="form-title">
+    <i class="fa-solid fa-file-contract me-2"></i>Список договоров
+  </h1>
+
+  <div class="list-toolbar">
+    <div class="theme-muted">
+        Всего: <span class="badge bg-secondary text-white">{{ paginator.count }}</span> договоров
+    </div>
+    <a href="{% url 'dogovor_create' %}" class="btn btn-primary shadow-sm">
+      <i class="fa-solid fa-plus-circle me-2"></i> Создать договор
+    </a>
+  </div>
+
+  <div class="table-container">
+    {% if dogovors %}
+    <div class="table-responsive">
+      <table class="custom-table">
+        <thead>
+          <tr>
+            <th>Номер</th>
+            <th class="text-center">Дата</th>
+            <th>Абитуриент</th>
+            <th class="text-center">Оплата</th>
+            <th class="text-center">Условия</th>
+            <th class="text-end">Действия</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for dogovor in dogovors %}
+          <tr>
+            <td>
+              <a href="{% url 'dogovor_detail' dogovor.pk %}" class="detail-link">
+                № {{ dogovor.number }}
+              </a>
+            </td>
+            <td class="text-center">
+                <span class="d-md-none theme-muted small">Дата: </span>{{ dogovor.date_of_conclusion|date:"d.m.Y" }}
+            </td>
+            <td>
+                <span class="d-md-none theme-muted small">Абитуриент: </span>{{ dogovor.abiturient.fio }}
+            </td>
+            <td class="text-center small">
+                <span class="d-md-none theme-muted small">Форма оплаты: </span>{{ dogovor.get_payment_form_display }}
+            </td>
+            <td class="text-center">
+              <span class="d-md-none theme-muted small">Особенности: </span>
+              {% if dogovor.maternity_capital %}
+                <span class="badge-condition" title="Материнский капитал">МК</span>
+              {% endif %}
+              {% if dogovor.credit %}
+                <span class="badge-condition" title="Кредит">КР</span>
+              {% endif %}
+              {% if not dogovor.maternity_capital and not dogovor.credit %}
+                <span class="text-muted small">—</span>
+              {% endif %}
+            </td>
+            <td class="text-end">
+              <div class="d-flex justify-content-end gap-2">
+                <a href="{% url 'dogovor_update' dogovor.pk %}" class="btn-action btn-edit" title="Редактировать">
+                  <i class="fa-solid fa-pen-to-square"></i>
+                </a>
+                <a href="{% url 'dogovor_delete' dogovor.pk %}" class="btn-action btn-delete" title="Удалить">
+                  <i class="fa-solid fa-trash"></i>
+                </a>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    {% if is_paginated %}
+    <div class="d-flex justify-content-center mt-4">
+        <nav aria-label="Навигация">
+            <ul class="pagination">
+                {% if page_obj.has_previous %}
+                <li class="page-item"><a class="page-link" href="?page=1">&laquo;&laquo;</a></li>
+                <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}">&laquo;</a></li>
+                {% endif %}
+
+                {% for num in paginator.page_range %}
+                    {% if page_obj.number == num %}
+                        <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+                    {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                        <li class="page-item"><a class="page-link" href="?page={{ num }}">{{ num }}</a></li>
+                    {% endif %}
+                {% endfor %}
+
+                {% if page_obj.has_next %}
+                <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}">&raquo;</a></li>
+                <li class="page-item"><a class="page-link" href="?page={{ paginator.num_pages }}">&raquo;&raquo;</a></li>
+                {% endif %}
+            </ul>
+        </nav>
+    </div>
+    {% endif %}
+
+    {% else %}
+    <div class="text-center py-5">
+      <i class="fa-solid fa-file-circle-xmark fa-3x empty-state-icon"></i>
+      <p class="empty-state-text">Договоры еще не зарегистрированы.</p>
+      <a href="{% url 'dogovor_create' %}" class="btn btn-outline-primary btn-sm">
+        <i class="fa-solid fa-plus me-1"></i> Создать первый
+      </a>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

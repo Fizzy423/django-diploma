@@ -1,0 +1,222 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Договор №{{ object.number }}{% endblock %}
+
+{% block extra_head %}
+<style>
+  .form-wrapper {
+    max-width: 1000px;
+    margin: 2rem auto;
+  }
+
+  h1.form-title {
+    font-size: 2.2rem;
+    font-weight: 800;
+    color: var(--text);
+    margin-bottom: 2rem;
+    text-align: center;
+  }
+
+  /* Стилизация карточек */
+  .info-card {
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius);
+    padding: 2rem;
+    box-shadow: var(--shadow);
+    margin-bottom: 2rem;
+  }
+
+  .section-title {
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: var(--primary);
+    margin-bottom: 1.5rem;
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 0.7rem;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  /* Сетка для данных */
+  .info-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1.5rem;
+  }
+
+  .info-item {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .info-label {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 4px;
+  }
+
+  .info-value {
+    font-size: 1.1rem;
+    font-weight: 500;
+    color: var(--text);
+  }
+
+  /* Блок условий (как блок здоровья) */
+  .condition-box {
+    background: rgba(var(--primary-rgb), 0.05);
+    border-radius: var(--radius);
+    padding: 1.5rem;
+    border-left: 4px solid var(--primary);
+  }
+
+  /* Кнопки */
+  .action-buttons {
+    display: flex;
+    gap: 1rem;
+    margin-top: 3rem;
+  }
+
+  .btn-edit {
+    background: linear-gradient(135deg, var(--primary-light), var(--primary));
+    color: white !important;
+  }
+
+  .btn-delete {
+    background: #ef4444;
+    color: white !important;
+  }
+
+  /* Бейджи */
+  .badge-custom {
+    background: var(--primary);
+    color: white;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 0.8rem;
+  }
+
+  .status-dot {
+    height: 10px;
+    width: 10px;
+    background-color: #10b981;
+    border-radius: 50%;
+    display: inline-block;
+    margin-right: 5px;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="form-wrapper">
+  
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="form-title mb-0">Договор №{{ object.number }}</h1>
+    <span class="badge-custom"><span class="status-dot"></span> Активен</span>
+  </div>
+
+  <!-- 1. Основные реквизиты -->
+  <div class="info-card">
+    <div class="section-title"><i class="fa-solid fa-file-contract"></i> Основная информация</div>
+    <div class="info-grid">
+      <div class="info-item">
+        <span class="info-label">Дата заключения</span>
+        <span class="info-value">{{ object.date_of_conclusion|date:"d.m.Y" }}</span>
+      </div>
+      <div class="info-item">
+        <span class="info-label">Форма оплаты</span>
+        <span class="info-value">{{ object.get_payment_form_display }}</span>
+      </div>
+      <div class="info-item">
+        <span class="info-label">ID Системы</span>
+        <span class="info-value">#{{ object.id }}</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2. Стороны договора -->
+  <div class="row">
+    <!-- Абитуриент -->
+    <div class="col-md-6">
+      <div class="info-card h-100">
+        <div class="section-title"><i class="fa-solid fa-user-graduate"></i> Абитуриент (Студент)</div>
+        <div class="info-item mb-3">
+          <span class="info-label">ФИО</span>
+          <span class="info-value">
+            <a href="{% url 'abiturient_detail' object.abiturient.pk %}">{{ object.abiturient.fio }}</a>
+          </span>
+        </div>
+        <div class="info-item">
+          <span class="info-label">Контактный телефон</span>
+          <span class="info-value">{{ object.abiturient.phone }}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Заказчик -->
+    <div class="col-md-6">
+      <div class="info-card h-100">
+        <div class="section-title"><i class="fa-solid fa-user-tie"></i> Заказчик (Родитель)</div>
+        <div class="info-item mb-3">
+          <span class="info-label">ФИО Заказчика</span>
+          <span class="info-value">{{ object.roditel_zakazchik.fio }}</span>
+        </div>
+        <div class="info-item">
+          <span class="info-label">Степень родства</span>
+          <span class="info-value">Официальный представитель</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3. Дополнительные условия -->
+  <div class="info-card mt-4">
+    <div class="section-title"><i class="fa-solid fa-circle-info"></i> Финансовые условия</div>
+    <div class="condition-box">
+      <div class="row">
+        <div class="col-md-6">
+          <div class="mb-2">
+            <strong>Материнский капитал:</strong> 
+            {% if object.maternity_capital %}
+              <span class="text-success"><i class="fa-solid fa-check"></i> Используется</span>
+            {% else %}
+              <span class="text-muted">Не используется</span>
+            {% endif %}
+          </div>
+        </div>
+        <div class="col-md-6">
+          <div>
+            <strong>Оплата в кредит:</strong> 
+            {% if object.credit %}
+              <span class="text-primary"><i class="fa-solid fa-credit-card"></i> Оформлен</span>
+            {% else %}
+              <span class="text-muted">Нет</span>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Кнопки действий -->
+  <div class="action-buttons">
+    <a href="{% url 'dogovor_list' %}" class="btn btn-outline-secondary">
+      <i class="fa-solid fa-arrow-left me-2"></i> К списку договоров
+    </a>
+    <div class="ms-auto d-flex gap-2">
+      <a href="{% url 'dogovor_update' object.pk %}" class="btn btn-edit btn">
+        <i class="fa-solid fa-pen-to-square me-2"></i> Редактировать
+      </a>
+      <a href="{% url 'dogovor_delete' object.pk %}" class="btn btn-delete btn">
+        <i class="fa-solid fa-trash me-2"></i> Удалить
+      </a>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

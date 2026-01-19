@@ -1,0 +1,487 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}Панель управления{% endblock %}
+{% block extra_head %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
+<style>
+/* === 1. ПЕРЕМЕННЫЕ ДЛЯ ГРАФИКА И КАРТОЧЕК === */
+:root {
+  --primary-rgb: 124, 58, 237;
+  --accent-rgb: 16, 185, 129;
+  --dashboard-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+[data-theme="dark"] {
+  --primary-rgb: 139, 92, 246;
+  --accent-rgb: 20, 184, 166;
+  --dashboard-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
+}
+
+/* === 2. ИЗОЛЯЦИЯ (Чтобы не ломать Navbar) === */
+.dashboard-container a {
+    color: var(--primary);
+    text-decoration: none;
+    transition: opacity 0.2s;
+}
+.dashboard-container a:hover { opacity: 0.8; }
+
+/* Убираем линию под кнопками-ссылками из base.html */
+.dashboard-card .card-actions a::after { display: none !important; }
+
+.text-muted { color: var(--text-muted) !important; }
+
+/* === 3. КОНТЕЙНЕР И ЗАГОЛОВОК === */
+.dashboard-container {
+  max-width: 1250px;
+  margin: 0 auto;
+  padding: 1rem 1.5rem 2.5rem 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.dashboard-header h1 {
+  text-align: center;
+  font-size: 2.8rem;
+  font-weight: 900;
+  margin-bottom: 2rem;
+  background: linear-gradient(90deg, var(--primary), var(--accent));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  text-shadow: 0 0 10px rgba(var(--primary-rgb), 0.3), 0 0 20px rgba(var(--primary-rgb), 0.15);
+  letter-spacing: 1.2px;
+}
+
+/* === 4. КАРТОЧКИ === */
+.dashboard-main-cards {
+  display: flex;
+  justify-content: center;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.dashboard-other-cards {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.5rem;
+}
+
+.dashboard-card {
+  background: var(--card-bg);
+  border-radius: var(--radius);
+  border: 1px solid var(--border-color);
+  box-shadow: var(--dashboard-shadow);
+  padding: 1.75rem 2rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  position: relative;
+  overflow: hidden;
+  transition: all var(--transition);
+}
+
+.dashboard-card:hover {
+  transform: translateY(-8px) scale(1.03);
+  box-shadow: 0 15px 35px rgba(var(--primary-rgb), 0.45);
+  border-color: var(--primary);
+}
+
+.dashboard-card i.icon-bg {
+  font-size: 3.5rem;
+  margin-bottom: 1rem;
+  color: var(--primary);
+  transition: transform 0.3s ease;
+}
+.dashboard-card:hover i.icon-bg { transform: scale(1.2) rotate(5deg); color: var(--accent); }
+
+.dashboard-card h2 { font-size: 1.6rem; font-weight: 700; margin-bottom: 0.75rem; color: var(--primary); }
+.dashboard-card .count { font-size: 2.5rem; font-weight: 800; margin-bottom: 1rem; color: var(--text); }
+
+.dashboard-card .card-actions a {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 0.3rem;
+  margin-right: 0.5rem;
+  padding: 0.6rem 1.2rem;
+  font-size: 0.95rem;
+  border-radius: 8px;
+  background-color: rgba(var(--primary-rgb), 0.15);
+  color: var(--text);
+  font-weight: 600;
+}
+.dashboard-card .card-actions a:hover { background: var(--primary); color: white !important; }
+
+/* === 5. СПИСКИ === */
+.dashboard-card.last-items ul { list-style: none; padding: 0; margin: 0; }
+.dashboard-card.last-items li {
+  margin-bottom: 0.8rem;
+  padding-bottom: 0.6rem;
+  border-bottom: 1px dashed rgba(var(--primary-rgb), 0.3);
+  display: flex;
+  align-items: center;
+}
+.dashboard-card.last-items li:last-child { border-bottom: none; }
+.dashboard-card.last-items a { font-weight: 500; font-size: 1.05rem; color: var(--text) !important; }
+.dashboard-card.last-items a i { color: var(--primary); width: 20px; text-align: center; margin-right: 10px;}
+
+/* === 6. НОВОСТИ / ЗАМЕТКИ (ОБНОВЛЕННЫЙ) === */
+.news-section {
+  background: var(--card-bg);
+  border-radius: var(--radius);
+  border: 1px solid var(--border-color);
+  border-left: 6px solid var(--primary);
+  padding: 2rem;
+  box-shadow: var(--dashboard-shadow);
+  transition: transform var(--transition);
+}
+.news-section h2 { color: var(--primary) !important; font-size: 1.8rem; font-weight: 800; margin-bottom: 0; display: flex; align-items: center; gap: 12px; }
+.news-content { background: rgba(var(--primary-rgb), 0.03); padding: 1.5rem; border-radius: var(--radius); border: 1px solid var(--border-color); margin-top: 1rem; }
+.news-section .news-content p { margin: 0; font-size: 1.1rem; line-height: 1.7; color: var(--text) !important; }
+
+.btn-edit-news {
+  background: var(--primary-light) !important;
+  color: var(--primary) !important;
+  border: 1px solid rgba(var(--primary-rgb), 0.2) !important;
+  padding: 0.5rem 0.8rem;
+  border-radius: 10px;
+  font-weight: 700;
+}
+.btn-save-news { background: var(--accent); color: white; border: none; padding: 0.6rem 1.5rem; border-radius: 10px; font-weight: 700; }
+.btn-clear-news-editor { background: transparent; color: var(--text-muted); border: 1px solid var(--border-color); padding: 0.6rem 1.2rem; border-radius: 10px; }
+
+/* === 7. ГРАФИК === */
+.chart-card { padding: 2rem; min-height: 400px; grid-column: 1 / -1; order: 4; }
+.chart-card canvas { width: 100% !important; height: 350px !important; }
+
+/* === 8. ПОИСК === */
+.search-card.dashboard-card { overflow: visible !important; z-index: 10; }
+.search-card input { width: 100%; padding: 0.8rem 1rem; border-radius: var(--radius); border: 2px solid var(--border-color); background-color: var(--card-bg); color: var(--text); }
+.autocomplete-items { display: none; position: absolute; top: 100%; left: 0; right: 0; max-height: 300px; overflow-y: auto; background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 0 0 var(--radius) var(--radius); box-shadow: var(--dashboard-shadow); z-index: 1500; }
+.autocomplete-item { padding: 0.75rem 1rem; cursor: pointer; color: var(--text) !important; border-bottom: 1px solid var(--border-color); }
+.autocomplete-item:hover { background: var(--primary); color: #ffffff !important; }
+
+@media (max-width: 992px) { .dashboard-other-cards { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 768px) { .dashboard-main-cards, .dashboard-other-cards { grid-template-columns: 1fr; } .dashboard-header h1 { font-size: 2.2rem; } }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-container">
+  <div class="dashboard-header">
+    <h1>Панель управления</h1>
+  </div>
+
+  <div class="dashboard-main-cards">
+    <div class="dashboard-card">
+      <i class="fa-solid fa-user-graduate icon-bg"></i>
+      <h2>Абитуриенты</h2>
+      <div class="count">{{ abiturient_count }}</div>
+      <div class="card-actions">
+        <a href="{% url 'abiturient_list' %}"><i class="fa-solid fa-eye me-2"></i>Просмотреть</a>
+        <a href="{% url 'abiturient_create' %}"><i class="fa-solid fa-plus me-2"></i>Добавить</a>
+      </div>
+    </div>
+    <div class="dashboard-card">
+      <i class="fa-solid fa-file-contract icon-bg"></i>
+      <h2>Договоры</h2>
+      <div class="count">{{ dogovor_count }}</div>
+      <div class="card-actions">
+        <a href="{% url 'dogovor_list' %}"><i class="fa-solid fa-eye me-2"></i>Просмотреть</a>
+        <a href="{% url 'dogovor_create' %}"><i class="fa-solid fa-plus me-2"></i>Добавить</a>
+      </div>
+    </div>
+  </div>
+
+  <div class="dashboard-other-cards">
+    <div class="dashboard-card last-items">
+      <h2>Последние абитуриенты</h2>
+      <ul>
+        {% for ab in recent_abiturients %}
+        <li><a href="{% url 'abiturient_detail' ab.pk %}"><i class="fa-solid fa-user-graduate"></i>{{ ab.fio|truncatechars:35 }}</a></li>
+        {% empty %}
+        <li><p class="text-muted"><i class="fa-solid fa-info-circle me-2"></i>Нет данных</p></li>
+        {% endfor %}
+      </ul>
+    </div>
+    <div class="dashboard-card last-items">
+      <h2>Последние договоры</h2>
+      <ul>
+        {% for d in recent_dogovors %}
+        <li><a href="{% url 'dogovor_detail' d.pk %}"><i class="fa-solid fa-file-contract"></i>Договор №{{ d.number }}</a></li>
+        {% empty %}
+        <li><p class="text-muted"><i class="fa-solid fa-info-circle me-2"></i>Нет данных</p></li>
+        {% endfor %}
+      </ul>
+    </div>
+    <div class="dashboard-card search-card">
+      <h2>Поиск</h2>
+      {% if has_any_search_data %}
+        <input id="studentSearch" type="text" placeholder="Поиск абитуриентов или договоров...">
+        <div id="autocompleteList" class="autocomplete-items"></div>
+      {% else %}
+        <p class="text-muted"><i class="fa-solid fa-exclamation-circle me-2"></i>Нет данных для поиска.</p>
+      {% endif %}
+    </div>
+    <div class="dashboard-card chart-card no-hover-effect">
+      <h2>Динамика за последние месяцы</h2>
+      <canvas id="dashboardChart"></canvas>
+    </div>
+  </div>
+
+  <div class="news-section">
+    <div style="display:flex; justify-content:space-between; align-items:center;">
+      <h2><i class="fa-solid fa-bullhorn"></i> Заметки и объявления</h2>
+      <div class="news-actions">
+        {% if user.is_authenticated and user.is_staff %}
+            <button class="btn-edit-news" title="Редактировать"><i class="fa-solid fa-pen-to-square"></i></button>
+        {% endif %}
+      </div>
+    </div>
+    <div class="news-content"></div>
+    {% if user.is_authenticated and user.is_staff %}
+        <div class="news-editor" style="display:none;">
+          <textarea class="news-textarea" placeholder="Введите текст сообщения..."></textarea>
+          <div class="news-editor-actions">
+              <button class="btn-save-news"><i class="fa-solid fa-check me-2"></i> Опубликовать</button>
+              <button class="btn-clear-news-editor"><i class="fa-solid fa-trash me-2"></i> Очистить</button>
+          </div>
+        </div>
+    {% endif %}
+  </div>
+</div> <!-- dashboard-container (Здесь был пропущен закрывающий тег) -->
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Вспомогательная функция для CSRF
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+const csrftoken = getCookie('csrftoken');
+
+// === Новости ===
+const newsContent = document.querySelector('.news-content');
+const editor = document.querySelector('.news-editor');
+const textarea = editor ? editor.querySelector('textarea') : null;
+const saveBtn = editor ? editor.querySelector('.btn-save-news') : null;
+const editBtn = document.querySelector('.btn-edit-news');
+const clearEditorBtn = document.querySelector('.btn-clear-news-editor');
+
+function loadNews() {
+    fetch("{% url 'get_news' %}")
+        .then(res => res.json())
+        .then(data => {
+            if (data.success && data.content) {
+                const p = document.createElement('p');
+                p.textContent = data.content;
+                p.innerHTML = p.innerHTML.replace(/\n/g, "<br>");
+                newsContent.innerHTML = '';
+                newsContent.appendChild(p);
+                if (textarea) textarea.value = data.content;
+            } else {
+                newsContent.innerHTML = `<p class="text-muted"><i class="fa-solid fa-info-circle me-2"></i>Нет активных заметок.</p>`;
+            }
+        });
+}
+
+document.addEventListener('DOMContentLoaded', loadNews);
+
+if (editBtn) {
+  editBtn.addEventListener('click', () => {
+    const isVisible = editor.style.display !== 'none';
+    editor.style.display = isVisible ? 'none' : 'block';
+    newsContent.style.display = isVisible ? 'block' : 'none';
+  });
+}
+
+function saveNews(content) {
+    fetch("{% url 'save_news' %}", {
+      method: "POST",
+      headers: { "X-CSRFToken": csrftoken, "Content-Type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({ content: content })
+    })
+    .then(res => res.json())
+    .then(data => {
+      if (data.success) {
+        loadNews();
+        if (editor) editor.style.display = "none";
+        newsContent.style.display = 'block';
+      }
+    });
+}
+
+if (saveBtn) saveBtn.addEventListener('click', () => saveNews(textarea.value.trim()));
+if (clearEditorBtn) clearEditorBtn.addEventListener('click', () => { if(confirm("Очистить заметку?")) saveNews(""); });
+
+// === График ===
+const ctx = document.getElementById('dashboardChart');
+let chart; 
+
+if (ctx && typeof Chart !== 'undefined') {
+  // Функция получения актуальных цветов из CSS
+  const getChartColors = () => {
+    const rootStyle = getComputedStyle(document.documentElement);
+    
+    // Получаем значения переменных или ставим заглушки, если переменные не найдены
+    const colorText = rootStyle.getPropertyValue('--text').trim() || '#333';
+    const colorBorder = rootStyle.getPropertyValue('--border-color').trim() || '#ddd';
+    const primaryRGB = rootStyle.getPropertyValue('--primary-rgb').trim() || '124, 58, 237';
+    const accentRGB = rootStyle.getPropertyValue('--accent-rgb').trim() || '16, 185, 129';
+
+    return {
+      text: colorText,
+      grid: colorBorder,
+      primary: `rgba(${primaryRGB}, 0.85)`,
+      primaryFill: `rgba(${primaryRGB}, 0.1)`,
+      accent: `rgba(${accentRGB}, 0.85)`,
+      accentFill: `rgba(${accentRGB}, 0.1)`
+    };
+  };
+
+  const colors = getChartColors();
+
+  chart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: ['Янв','Фев','Мар','Апр','Май','Июн','Июл','Авг','Сен','Окт','Ноя','Дек'],
+      datasets: [
+        { 
+          label: 'Новые абитуриенты', 
+          data: [1, 0, 2, 3, 12, 22, 18, 5, 2, 1, 0, 0], 
+          borderColor: colors.primary,
+          backgroundColor: colors.primaryFill,
+          tension: 0.4, 
+          fill: true,
+          pointRadius: 4
+        },
+        { 
+          label: 'Заключенные договоры', 
+          data: [0, 0, 1, 1, 5, 15, 20, 10, 3, 0, 0, 0], 
+          borderColor: colors.accent,
+          backgroundColor: colors.accentFill,
+          tension: 0.4, 
+          fill: true,
+          pointRadius: 4
+        }
+      ]
+    },
+    options: { 
+      responsive: true, 
+      maintainAspectRatio: false, 
+      plugins: { 
+        legend: { 
+            labels: { color: colors.text, font: { weight: '600', family: 'Inter, sans-serif' } }
+        }
+      },
+      scales: {
+        y: {
+          beginAtZero: true,
+          max: 50,
+          grid: { color: colors.grid },
+          ticks: { color: colors.text },
+          title: {
+            display: true,
+            text: 'Кол-во человек',
+            color: colors.text // Теперь тоже обновляется
+          }
+        },
+        x: {
+          grid: { display: false },
+          ticks: { color: colors.text }
+        }
+      }
+    }
+  });
+
+  // Функция для перерисовки графика при смене темы
+  const updateChartTheme = () => {
+    // Ждем один кадр анимации, чтобы CSS-переменные успели обновиться в DOM
+    requestAnimationFrame(() => {
+      const c = getChartColors();
+      
+      // Обновляем общие настройки
+      chart.options.plugins.legend.labels.color = c.text;
+      chart.options.scales.x.ticks.color = c.text;
+      chart.options.scales.y.ticks.color = c.text;
+      chart.options.scales.y.grid.color = c.grid;
+      chart.options.scales.y.title.color = c.text;
+
+      // Обновляем цвета линий и заливки
+      chart.data.datasets[0].borderColor = c.primary;
+      chart.data.datasets[0].backgroundColor = c.primaryFill;
+      chart.data.datasets[1].borderColor = c.accent;
+      chart.data.datasets[1].backgroundColor = c.accentFill;
+      
+      chart.update();
+    });
+  };
+
+  // Следим за изменением атрибута data-theme на <html> или <body>
+  const observer = new MutationObserver(updateChartTheme);
+  observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+  // На всякий случай следим и за body, если ваша тема переключается там
+  observer.observe(document.body, { attributes: true, attributeFilter: ['data-theme'] });
+}
+
+// === Поиск ===
+const searchInput = document.getElementById('studentSearch');
+const autocompleteList = document.getElementById('autocompleteList');
+
+if (searchInput && autocompleteList) {
+  searchInput.addEventListener('input', function() {
+    const query = this.value.trim();
+    if (query.length < 2) { 
+      autocompleteList.style.display = 'none'; 
+      return; 
+    }
+    
+    fetch(`{% url 'search_students_legacy' %}?q=${encodeURIComponent(query)}`)
+      .then(res => res.json())
+      .then(data => {
+        autocompleteList.innerHTML = '';
+        if (data.results && data.results.length > 0) {
+          data.results.forEach(item => {
+            // Внутри цикла поиска:
+            const div = document.createElement('div');
+            div.className = 'autocomplete-item';
+            const strong = document.createElement('strong');
+            strong.textContent = item.type === 'abiturient' ? item.fio : 'Договор №' + item.number;
+            div.appendChild(strong);
+            div.onclick = () => {
+              const urlMask = item.type === 'abiturient' 
+                ? `{% url 'abiturient_detail' 999 %}` 
+                : `{% url 'dogovor_detail' 999 %}`;
+              window.location.href = urlMask.replace('999', item.id);
+            };
+            autocompleteList.appendChild(div);
+          });
+          autocompleteList.style.display = 'block';
+        } else {
+          autocompleteList.style.display = 'none';
+        }
+      })
+      .catch(err => console.error("Ошибка поиска:", err));
+  });
+
+  // Закрытие поиска при клике вне его (ИСПРАВЛЕНО)
+  document.addEventListener('click', (e) => {
+    if (!searchInput.contains(e.target) && !autocompleteList.contains(e.target)) {
+      autocompleteList.style.display = 'none';
+    }
+  });
+}
+</script>
+{% endblock %}
