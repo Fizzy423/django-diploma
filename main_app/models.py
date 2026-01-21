@@ -16,7 +16,7 @@ class News(models.Model):
     class Meta:
         verbose_name = "Новость"
         verbose_name_plural = "Новости"
-        ordering = ['-created_at'] # Сортировка новостей по убыванию даты создания
+        ordering = ['-created_at'] 
 
 
 class Roditel(models.Model):
@@ -36,15 +36,11 @@ class Roditel(models.Model):
 
 class Specialnost(models.Model):
     name = models.CharField(max_length=255, unique=True, verbose_name="Название специальности")
-    # ВРЕМЕННО: Делаем поле 'code' допускающим NULL, чтобы применить миграции к существующим данным.
-    # После применения миграции и заполнения всех существующих значений 'code',
-    # измените это на code = models.CharField(max_length=50, unique=True, verbose_name="Код специальности")
-    # и снова запустите makemigrations и migrate.
     code = models.CharField(max_length=50, unique=True, null=True, blank=True, verbose_name="Код специальности")
     description = models.TextField(blank=True, verbose_name="Описание")
 
     def __str__(self):
-        return f"{self.code if self.code else 'Без кода'} - {self.name}" # Safe-access для code
+        return f"{self.code if self.code else 'Без кода'} - {self.name}" 
 
     class Meta:
         verbose_name = "Специальность"
@@ -88,14 +84,13 @@ class Zdorovie(models.Model):
     abiturient = models.OneToOneField(
         Abiturient,
         on_delete=models.CASCADE,
-        related_name='health_info', # Изменено для интуитивного доступа (abiturient_instance.health_info)
+        related_name='health_info', 
         null=True,
         blank=True,
         verbose_name="Абитуриент"
     )
 
     def __str__(self):
-        # Safe-access для abiturient.fio
         return f"Здоровье ({self.abiturient.fio if self.abiturient else 'Нет абитуриента'})"
 
     class Meta:
@@ -114,7 +109,6 @@ class AbiturientRoditel(models.Model):
         verbose_name_plural = "Связи абитуриентов и родителей"
 
     def __str__(self):
-        # Safe-access для связанных объектов
         abiturient_fio = self.abiturient.fio if self.abiturient else 'Неизвестный абитуриент'
         roditel_fio = self.roditel.fio if self.roditel else 'Неизвестный родитель'
         return f"{abiturient_fio} - {roditel_fio} ({self.relation_type})"
@@ -133,7 +127,6 @@ class Document(models.Model):
     upload_date = models.DateTimeField(default=timezone.now, verbose_name="Дата загрузки")
 
     def __str__(self):
-        # Safe-access для abiturient.fio
         return f"{self.get_type_display()} для {self.abiturient.fio if self.abiturient else 'Неизвестного абитуриента'}"
 
     class Meta:
@@ -158,7 +151,6 @@ class Dogovor(models.Model):
     roditel_zakazchik = models.ForeignKey(Roditel, on_delete=models.SET_NULL, null=True, blank=True, verbose_name="Родитель-заказчик")
 
     def __str__(self):
-        # Safe-access для abiturient.fio
         return f"Договор №{self.number} ({self.abiturient.fio if self.abiturient else 'Неизвестный абитуриент'})"
     
 

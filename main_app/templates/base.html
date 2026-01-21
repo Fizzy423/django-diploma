@@ -772,16 +772,12 @@
       const toTop = document.getElementById("toTopBtn");
       const themeBtn = document.getElementById("themeToggleBtn");
       const root = document.documentElement;
-
-      // Loader
       window.addEventListener("load", () => {
         if(loader){
           loader.style.opacity = 0;
           setTimeout(() => loader.style.display = "none", 400);
         }
       });
-
-      // Scroll to top
       if(toTop){
         window.addEventListener("scroll", () => {
           toTop.style.display = window.scrollY > 300 ? "flex" : "none";
@@ -789,9 +785,7 @@
         toTop.addEventListener("click", () => window.scrollTo({top:0, behavior:"smooth"}));
       }
 
-      // Найти блок Theme toggle и заменить на это:
 if(themeBtn){
-  // Устанавливаем правильную иконку сразу при загрузке
   const currentTheme = root.dataset.theme || "light";
   themeBtn.innerHTML = currentTheme === "dark" ? '<i class="fa-solid fa-sun"></i>' : '<i class="fa-solid fa-moon"></i>';
 
@@ -799,8 +793,6 @@ if(themeBtn){
     const current = root.dataset.theme === "dark" ? "light" : "dark";
     root.dataset.theme = current;
     localStorage.setItem("theme", current);
-
-    // Анимация иконки
     const icon = themeBtn.querySelector('i');
     icon.style.transform = 'rotate(180deg)';
     setTimeout(() => {

@@ -365,24 +365,20 @@
 {% endblock %}
 
 {% block extra_js %}
-<!-- jQuery (необходим для DaData) -->
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/suggestions-jquery@21.12.0/dist/js/jquery.suggestions.min.js"></script>
 <script>
     $(document).ready(function() {
         var token = "d689ced837e83424219f3d3c5dfeadd1c93cfb93";
 
-        // 1. Полный адрес для абитуриента
         $("#id_address").suggestions({
             token: token,
             type: "ADDRESS"
         });
 
-        // 2. Только города/населенные пункты для родителей
         $(".dadata-city").suggestions({
             token: token,
             type: "ADDRESS",
-            /* Ограничиваем поиск только городами и поселками (без улиц) */
             bounds: "city-settlement"
         });
     });

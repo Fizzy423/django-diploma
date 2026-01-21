@@ -46,8 +46,6 @@ class ZdorovieAdmin(admin.ModelAdmin):
     search_fields = ('abiturient__fio', 'diseases', 'restrictions')
     list_filter = ('disability',)
     list_per_page = 25
-    # ИСПРАВЛЕНИЕ: Удалено autocomplete_fields для OneToOneField
-    # autocomplete_fields = ['abiturient']
     list_select_related = ('abiturient',)
 
 

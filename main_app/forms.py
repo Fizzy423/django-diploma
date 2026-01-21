@@ -19,12 +19,11 @@ class CustomAuthForm(AuthenticationForm):
 
 
 # ----------------------------------------
-# Форма для родителей (Roditel) - ОБНОВЛЕНА ПО ТЗ
+# Форма для родителей (Roditel) - ИСПРАВЛЕНА
 # ----------------------------------------
 class RoditelForm(forms.ModelForm):
     class Meta:
         model = Roditel
-        # Добавлены поля workplace и address согласно ТЗ
         fields = ['fio', 'phone', 'email', 'workplace', 'address'] 
         labels = {
             'fio': 'ФИО родителя',
@@ -34,12 +33,23 @@ class RoditelForm(forms.ModelForm):
             'address': 'Адрес проживания',
         }
         widgets = {
-            'fio': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Иванова Мария Ивановна'}), 
+            'fio': forms.TextInput(attrs={'class': 'form-control'}), 
             'phone': forms.TextInput(attrs={'class': 'form-control', 'placeholder': '+7 (900) 000-00-00'}),
             'email': forms.EmailInput(attrs={'class': 'form-control', 'placeholder': 'example@mail.ru'}),
             'workplace': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Название организации, должность'}),
             'address': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Город, улица, дом, кв.'}),
         }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        
+       
+        if self.prefix == 'father':
+            self.fields['fio'].widget.attrs['placeholder'] = 'Иванов Иван Иванович'
+        elif self.prefix == 'mother':
+            self.fields['fio'].widget.attrs['placeholder'] = 'Иванова Мария Ивановна'
+        else:
+            self.fields['fio'].widget.attrs['placeholder'] = 'Иванов Иван Иванович'
 
 
 # ----------------------------------------
@@ -125,7 +135,6 @@ class DocumentForm(forms.ModelForm):
 class DogovorForm(forms.ModelForm):
     class Meta:
         model = Dogovor
-        # Теперь включаем payment_form, так как это требование ТЗ
         fields = [
             'number', 'date_of_conclusion', 'payment_form', 
             'maternity_capital', 'credit', 'abiturient', 'roditel_zakazchik'

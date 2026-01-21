@@ -250,12 +250,11 @@
         </div>
     {% endif %}
   </div>
-</div> <!-- dashboard-container (Здесь был пропущен закрывающий тег) -->
+</div> 
 {% endblock %}
 
 {% block extra_js %}
 <script>
-// Вспомогательная функция для CSRF
 function getCookie(name) {
     let cookieValue = null;
     if (document.cookie && document.cookie !== '') {
@@ -331,11 +330,8 @@ const ctx = document.getElementById('dashboardChart');
 let chart; 
 
 if (ctx && typeof Chart !== 'undefined') {
-  // Функция получения актуальных цветов из CSS
   const getChartColors = () => {
     const rootStyle = getComputedStyle(document.documentElement);
-    
-    // Получаем значения переменных или ставим заглушки, если переменные не найдены
     const colorText = rootStyle.getPropertyValue('--text').trim() || '#333';
     const colorBorder = rootStyle.getPropertyValue('--border-color').trim() || '#ddd';
     const primaryRGB = rootStyle.getPropertyValue('--primary-rgb').trim() || '124, 58, 237';
@@ -395,7 +391,7 @@ if (ctx && typeof Chart !== 'undefined') {
           title: {
             display: true,
             text: 'Кол-во человек',
-            color: colors.text // Теперь тоже обновляется
+            color: colors.text 
           }
         },
         x: {
@@ -406,20 +402,14 @@ if (ctx && typeof Chart !== 'undefined') {
     }
   });
 
-  // Функция для перерисовки графика при смене темы
   const updateChartTheme = () => {
-    // Ждем один кадр анимации, чтобы CSS-переменные успели обновиться в DOM
     requestAnimationFrame(() => {
       const c = getChartColors();
-      
-      // Обновляем общие настройки
       chart.options.plugins.legend.labels.color = c.text;
       chart.options.scales.x.ticks.color = c.text;
       chart.options.scales.y.ticks.color = c.text;
       chart.options.scales.y.grid.color = c.grid;
       chart.options.scales.y.title.color = c.text;
-
-      // Обновляем цвета линий и заливки
       chart.data.datasets[0].borderColor = c.primary;
       chart.data.datasets[0].backgroundColor = c.primaryFill;
       chart.data.datasets[1].borderColor = c.accent;
@@ -429,10 +419,8 @@ if (ctx && typeof Chart !== 'undefined') {
     });
   };
 
-  // Следим за изменением атрибута data-theme на <html> или <body>
   const observer = new MutationObserver(updateChartTheme);
   observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
-  // На всякий случай следим и за body, если ваша тема переключается там
   observer.observe(document.body, { attributes: true, attributeFilter: ['data-theme'] });
 }
 
@@ -454,7 +442,6 @@ if (searchInput && autocompleteList) {
         autocompleteList.innerHTML = '';
         if (data.results && data.results.length > 0) {
           data.results.forEach(item => {
-            // Внутри цикла поиска:
             const div = document.createElement('div');
             div.className = 'autocomplete-item';
             const strong = document.createElement('strong');
@@ -475,8 +462,6 @@ if (searchInput && autocompleteList) {
       })
       .catch(err => console.error("Ошибка поиска:", err));
   });
-
-  // Закрытие поиска при клике вне его (ИСПРАВЛЕНО)
   document.addEventListener('click', (e) => {
     if (!searchInput.contains(e.target) && !autocompleteList.contains(e.target)) {
       autocompleteList.style.display = 'none';

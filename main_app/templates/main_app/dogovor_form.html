@@ -205,16 +205,14 @@ $(document).ready(function() {
         var abitId = $(this).val();
         if (abitId) {
             $.ajax({
-                url: '/api/abit_info/' + abitId + '/', // ИСПОЛЬЗУЕМ НОВЫЙ URL
+                url: '/api/abit_info/' + abitId + '/', 
                 success: function(data) {
                     var now = new Date();
                     var day = ("0" + now.getDate()).slice(-2);
                     var month = ("0" + (now.getMonth() + 1)).slice(-2);
                     
-                    // Генерируем номер: День-Месяц-КодСпец-ID
                     var generatedNumber = day + "-" + month + "-" + data.spec_code + "-" + data.abit_id;
                     
-                    // Подставляем в поле
                     $('#id_number').val(generatedNumber);
                 }
             });
