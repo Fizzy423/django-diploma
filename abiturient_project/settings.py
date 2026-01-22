@@ -1,17 +1,33 @@
 import os
 from pathlib import Path
+from dotenv import load_dotenv  
+
+# --- 0. ЗАГРУЗКА ОКРУЖЕНИЯ ---
+# Загружает переменные из файла .env (если он есть)
+load_dotenv()
 
 # Путь к проекту
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 # --- 1. ОСНОВНЫЕ НАСТРОЙКИ БЕЗОПАСНОСТИ ---
-# В продакшене SECRET_KEY должен быть в переменных окружения
-SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', 'django-insecure-zb^z$h#$-h_c&hv6t_&97@+(=#onp^hv6*k4n$r=xo^&h8k=57')
 
+# Сначала определяем DEBUG, чтобы использовать его в условиях ниже
 DEBUG = os.environ.get('DJANGO_DEBUG', 'True') == 'True'
 
-# В список ALLOWED_HOSTS нужно добавить домен вашего сервера при деплое
-ALLOWED_HOSTS = ['*']
+# Получаем SECRET_KEY из окружения
+SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY')
+
+if not SECRET_KEY:
+    if DEBUG:
+        # Резервный ключ для локальной разработки
+        SECRET_KEY = 'django-insecure-local-dev-key-you-should-change-it'
+    else:
+        # В продакшене без ключа сайт не запустится
+        raise ValueError("DJANGO_SECRET_KEY must be set in production (check your .env file)!")
+
+# Динамическая настройка разрешенных хостов
+# В .env пиши: DJANGO_ALLOWED_HOSTS=localhost,127.0.0.1
+ALLOWED_HOSTS = os.environ.get('DJANGO_ALLOWED_HOSTS', '*').split(',')
 
 
 # --- 2. ПРИЛОЖЕНИЯ ---
@@ -40,13 +56,13 @@ INSTALLED_APPS = [
 # --- 3. MIDDLEWARE ---
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
-    'whitenoise.middleware.WhiteNoiseMiddleware',  # ВОТ ЭТА СТРОКА
+    'whitenoise.middleware.WhiteNoiseMiddleware',  # Для работы со статикой
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
-    'django.middleware.clickjacking.XFrameOptionsMiddleware', # Защита от Clickjacking
+    'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
 ROOT_URLCONF = 'abiturient_project.urls'
@@ -74,11 +90,11 @@ WSGI_APPLICATION = 'abiturient_project.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'MyBD',
-        'USER': 'postgres',
-        'PASSWORD': '1', # Смените на сложный пароль в продакшене!
-        'HOST': os.environ.get('DATABASE_HOST', 'localhost'), # По умолчанию localhost, но в докере будет 'db'
-        'PORT': '5432',
+        'NAME': os.environ.get('DB_NAME', 'MyBD'),
+        'USER': os.environ.get('DB_USER', 'postgres'),
+        'PASSWORD': os.environ.get('DB_PASSWORD', '1'), 
+        'HOST': os.environ.get('DATABASE_HOST', 'localhost'),
+        'PORT': os.environ.get('DATABASE_PORT', '5432'),
         'OPTIONS': {
             'client_encoding': 'UTF8',
         }
@@ -99,7 +115,7 @@ AUTHENTICATION_BACKENDS = (
     'guardian.backends.ObjectPermissionBackend',
 )
 
-# Перенаправления
+# Маршруты авторизации
 LOGIN_URL = 'login'
 LOGIN_REDIRECT_URL = 'dashboard'
 LOGOUT_REDIRECT_URL = 'login'
@@ -115,39 +131,38 @@ USE_TZ = True
 # --- 7. СТАТИКА И МЕДИА ---
 STATIC_URL = '/static/'
 STATICFILES_DIRS = [BASE_DIR / "static"]
-# STATIC_ROOT = BASE_DIR / 'staticfiles'
+STATIC_ROOT = BASE_DIR / 'staticfiles'
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
-# Ограничение размера файла (10 МБ), защита от переполнения диска
+# Ограничение размера данных (10 МБ)
 DATA_UPLOAD_MAX_MEMORY_SIZE = 10485760 
 
 
-# --- 8. НАСТРОЙКИ БЕЗОПАСНОСТИ ДЛЯ ПРОДАКШЕНА (SSL/Cookies) ---
-# Эти настройки активируются автоматически при DEBUG = False
+# --- 8. НАСТРОЙКИ БЕЗОПАСНОСТИ ДЛЯ ПРОДАКШЕНА ---
 if not DEBUG:
-    # 1. Защита Cookies
-    SESSION_COOKIE_SECURE = True       # Куки сессии только через HTTPS
-    CSRF_COOKIE_SECURE = True          # CSRF-токен только через HTTPS
-    SESSION_COOKIE_HTTPONLY = True     # Запрет доступа JS к кукам сессии
+    # Защита куков
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    SESSION_COOKIE_HTTPONLY = True
     CSRF_COOKIE_HTTPONLY = True
 
-    # 2. Защита от XSS и сниффинга
+    # Защита от XSS и сниффинга
     SECURE_BROWSER_XSS_FILTER = True
     SECURE_CONTENT_TYPE_NOSNIFF = True
 
-    # 3. HSTS и SSL редирект
-    SECURE_SSL_REDIRECT = True         # Авто-редирект с http на https
-    SECURE_HSTS_SECONDS = 31536000     # 1 год (строгое использование https)
+    # SSL и HSTS
+    SECURE_SSL_REDIRECT = True
+    SECURE_HSTS_SECONDS = 31536000  # 1 год
     SECURE_HSTS_INCLUDE_SUBDOMAINS = True
     SECURE_HSTS_PRELOAD = True
 
-    # 4. Защита от встраивания в iframe (Clickjacking)
-    X_FRAME_OPTIONS = 'DENY'           # Полный запрет встраивания сайта в чужие окна
+    # Запрет встраивания в iframe
+    X_FRAME_OPTIONS = 'DENY'
 
 
-# --- 9. ПРОЧЕЕ ---
+# --- 9. ДОПОЛНИТЕЛЬНО ---
 CRISPY_ALLOWED_TEMPLATE_PACKS = "bootstrap5"
 CRISPY_TEMPLATE_PACK = "bootstrap5"
 
