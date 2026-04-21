@@ -34,4 +34,4 @@
 
 ```bash
 git clone https://github.com/Fizzy423/django-diploma.git
-cd django-diploma
+cd academy-top
