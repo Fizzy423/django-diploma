@@ -7,16 +7,16 @@ from django.contrib.auth import views as auth_views
 
 from main_app.views import (
     CustomLoginView, logout_view, dashboard,
-    AbiturientListView, AbiturientDetailView, AbiturientCreateView, AbiturientUpdateView, AbiturientDeleteView,
-    DogovorListView, DogovorCreateView, DogovorDetailView, DogovorUpdateView, DogovorDeleteView,
+    AbiturientListView, AbiturientDetailView, AbiturientCreateView, 
+    AbiturientUpdateView, AbiturientDeleteView,
+    DogovorListView, DogovorCreateView, DogovorDetailView, 
+    DogovorUpdateView, DogovorDeleteView,
     DocumentCreateView,
     get_parents_by_abiturient_ajax, get_news, save_news,
-    search_students,
-    search_students_legacy,
-    AbiturientAutocomplete,
-    RoditelAutocomplete, 
-    SpecialnostAutocomplete,
-    get_abit_info_ajax 
+    search_students, search_students_legacy,
+    AbiturientAutocomplete, RoditelAutocomplete, SpecialnostAutocomplete,
+    get_abit_info_ajax,
+    enroll_student 
 )
 
 urlpatterns = [
@@ -44,17 +44,18 @@ urlpatterns = [
     path('dashboard/', dashboard, name='dashboard'),
     path('', dashboard, name='home'), 
 
-     # Autocomplete-light
+    # Autocomplete-light
     path('abiturient-autocomplete/', AbiturientAutocomplete.as_view(), name='abiturient-autocomplete'),
     path('roditel-autocomplete/', RoditelAutocomplete.as_view(), name='roditel-autocomplete'),
     path('specialnost-autocomplete/', SpecialnostAutocomplete.as_view(), name='specialnost-autocomplete'),
 
-    # Абитуриенты
+    # Абитуриенты и студенты
     path('abiturients/', AbiturientListView.as_view(), name='abiturient_list'),
     path('abiturients/new/', AbiturientCreateView.as_view(), name='abiturient_create'),
     path('abiturients/<int:pk>/', AbiturientDetailView.as_view(), name='abiturient_detail'),
     path('abiturients/<int:pk>/edit/', AbiturientUpdateView.as_view(), name='abiturient_update'),
     path('abiturients/<int:pk>/delete/', AbiturientDeleteView.as_view(), name='abiturient_delete'),
+    path('abiturients/<int:pk>/enroll/', enroll_student, name='enroll_student'),  
 
     # Договоры
     path('dogovors/', DogovorListView.as_view(), name='dogovor_list'),
@@ -68,8 +69,10 @@ urlpatterns = [
     path('documents/new/', DocumentCreateView.as_view(), name='document_create'),
 
     # AJAX / API
-    path('api/parents_by_abiturient/<int:abiturient_id>/', get_parents_by_abiturient_ajax, name='parents_by_abiturient_ajax'),
-    path('api/abit_info/<int:abit_id>/', get_abit_info_ajax, name='abit_info_ajax'), # Теперь это заработает
+    path('api/parents_by_abiturient/<int:abiturient_id>/', 
+         get_parents_by_abiturient_ajax, name='parents_by_abiturient_ajax'),
+    path('api/abit_info/<int:abit_id>/', 
+         get_abit_info_ajax, name='abit_info_ajax'), 
     path('api/get_news/', get_news, name='get_news'),
     path('api/save_news/', save_news, name='save_news'),
     path('api/search_students_legacy/', search_students_legacy, name='search_students_legacy'),

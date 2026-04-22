@@ -54,6 +54,14 @@ class Abiturient(models.Model):
         ('9', '9 класс'),
         ('11', '11 класс'),
     ]
+    
+    # Добавляем статусы
+    STATUS_CHOICES = [
+        ('abiturient', 'Абитуриент'),
+        ('student', 'Студент'),
+        ('graduated', 'Выпускник'),
+        ('expelled', 'Отчислен'),
+    ]
 
     user = models.OneToOneField(User, on_delete=models.CASCADE, verbose_name="Пользователь", blank=True, null=True)
     fio = models.CharField(max_length=255, verbose_name="ФИО")
@@ -65,6 +73,16 @@ class Abiturient(models.Model):
     address = models.CharField(max_length=255, verbose_name="Адрес")
     email = models.EmailField(verbose_name="Электронная почта")
     is_guardianship = models.BooleanField(default=False, verbose_name="Опекунство или сирота")
+    
+    # НОВЫЕ ПОЛЯ ДЛЯ СТАТУСА СТУДЕНТА
+    status = models.CharField(
+        max_length=20, 
+        choices=STATUS_CHOICES, 
+        default='abiturient', 
+        verbose_name="Статус"
+    )
+    enrollment_date = models.DateField(null=True, blank=True, verbose_name="Дата зачисления")
+    student_group = models.CharField(max_length=50, blank=True, verbose_name="Группа")
 
     parents = models.ManyToManyField(Roditel, through='AbiturientRoditel', related_name='abiturients', verbose_name="Родители")
 
@@ -131,7 +149,7 @@ class Document(models.Model):
         blank=True, 
         null=True, 
         verbose_name="Скан документа",
-        validators=[validate_file_extension, validate_file_size] # Добавлено
+        validators=[validate_file_extension, validate_file_size] 
     )
     
     description = models.TextField(blank=True, verbose_name="Описание документа")
@@ -147,14 +165,14 @@ class Document(models.Model):
 
 class Dogovor(models.Model):
     PAYMENT_FORMS = [
-    ('monthly', 'Помесячно'),
-    ('semester', 'По семестрам'),
-    ('yearly', 'За год'),
-]
+        ('monthly', 'Помесячно'),
+        ('semester', 'По семестрам'),
+        ('yearly', 'За год'),
+    ]
 
     number = models.CharField(max_length=50, unique=True, verbose_name="Номер договора")
     date_of_conclusion = models.DateField(default=timezone.now, verbose_name="Дата заключения")
-    payment_form = models.CharField(max_length=10, choices=PAYMENT_FORMS, default='contract', verbose_name="Форма оплаты")
+    payment_form = models.CharField(max_length=10, choices=PAYMENT_FORMS, default='monthly', verbose_name="Форма оплаты")  # Исправил default
     maternity_capital = models.BooleanField(default=False, verbose_name="Материнский капитал")
     credit = models.BooleanField(default=False, verbose_name="Кредит")
 
@@ -164,7 +182,6 @@ class Dogovor(models.Model):
     def __str__(self):
         return f"Договор №{self.number} ({self.abiturient.fio if self.abiturient else 'Неизвестный абитуриент'})"
     
-
     class Meta:
         verbose_name = "Договор"
         verbose_name_plural = "Договоры"

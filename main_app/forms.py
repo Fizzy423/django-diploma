@@ -18,9 +18,9 @@ class CustomAuthForm(AuthenticationForm):
     }
 
 
-# ----------------------------------------
-# Форма для родителей (Roditel) - ИСПРАВЛЕНА
-# ----------------------------------------
+# ------------------------------
+# Форма для родителей (Roditel) 
+# ------------------------------
 class RoditelForm(forms.ModelForm):
     class Meta:
         model = Roditel
@@ -52,9 +52,9 @@ class RoditelForm(forms.ModelForm):
             self.fields['fio'].widget.attrs['placeholder'] = 'Иванов Иван Иванович'
 
 
-# ----------------------------------------
+# ------------------------------
 # Форма для здоровья (Zdorovie)
-# ----------------------------------------
+# ------------------------------
 class ZdorovieForm(forms.ModelForm):
     class Meta:
         model = Zdorovie
@@ -73,9 +73,9 @@ class ZdorovieForm(forms.ModelForm):
         }
 
 
-# ----------------------------------------
+# -----------------------------------
 # Форма для абитуриента (Abiturient)
-# ----------------------------------------
+# -----------------------------------
 class AbiturientForm(forms.ModelForm):
     class Meta:
         model = Abiturient
@@ -110,9 +110,9 @@ class AbiturientForm(forms.ModelForm):
         }
 
 
-# ----------------------------------------
+# -------------------------------
 # Форма для документа (Document)
-# ----------------------------------------
+# -------------------------------
 class DocumentForm(forms.ModelForm):
     class Meta:
         model = Document
@@ -129,9 +129,9 @@ class DocumentForm(forms.ModelForm):
         }
 
 
-# ----------------------------------------
-# Форма для договора (Dogovor) - ОБНОВЛЕНА ПО ТЗ
-# ----------------------------------------
+# -----------------------------
+# Форма для договора (Dogovor) 
+# -----------------------------
 class DogovorForm(forms.ModelForm):
     class Meta:
         model = Dogovor

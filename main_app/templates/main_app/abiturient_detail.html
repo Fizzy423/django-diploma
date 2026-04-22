@@ -110,6 +110,11 @@
     color: white !important;
   }
 
+  .btn-enroll {
+    background: linear-gradient(135deg, #10b981, #059669);
+    color: white !important;
+  }
+
   /* Бейджи */
   .badge-custom {
     background: var(--primary);
@@ -117,6 +122,33 @@
     padding: 4px 12px;
     border-radius: 20px;
     font-size: 0.8rem;
+  }
+
+  .badge-status {
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: 600;
+  }
+
+  .badge-abiturient {
+    background: #3b82f6;
+    color: white;
+  }
+
+  .badge-student {
+    background: #10b981;
+    color: white;
+  }
+
+  .badge-graduated {
+    background: #8b5cf6;
+    color: white;
+  }
+
+  .badge-expelled {
+    background: #ef4444;
+    color: white;
   }
 
   body[data-theme="dark"] .list-custom-item {
@@ -130,8 +162,23 @@
   
   <div class="d-flex justify-content-between align-items-center mb-4">
     <h1 class="form-title mb-0">{{ object.fio }}</h1>
-    <span class="badge-custom">Абитуриент ID: {{ object.id }}</span>
+    <div class="d-flex gap-2 align-items-center">
+      <span class="badge-custom">ID: {{ object.id }}</span>
+      <span class="badge-status badge-{{ object.status }}">
+        {{ object.get_status_display }}
+      </span>
+    </div>
   </div>
+
+  <!-- Информация о зачислении (если студент) -->
+  {% if object.status == 'student' %}
+  <div class="alert alert-success mb-4" role="alert">
+    <i class="fa-solid fa-graduation-cap me-2"></i>
+    <strong>Зачислен в студенты</strong> — 
+    {% if object.enrollment_date %}Дата зачисления: {{ object.enrollment_date|date:"d.m.Y" }}{% endif %}
+    {% if object.student_group %} | Группа: {{ object.student_group }}{% endif %}
+  </div>
+  {% endif %}
 
   <!-- 1. Основные данные -->
   <div class="info-card">
@@ -178,9 +225,12 @@
             <div class="mb-2"><strong>Заболевания:</strong> {{ object.health_info.diseases|default:"нет" }}</div>
             <div class="mb-2"><strong>Инвалидность:</strong> {{ object.health_info.disability|yesno:"Есть,Нет" }}</div>
             <div><strong>Ограничения:</strong> {{ object.health_info.restrictions|default:"нет" }}</div>
+            {% if object.health_info.additional_info %}
+            <div class="mt-2"><strong>Доп. информация:</strong> {{ object.health_info.additional_info }}</div>
+            {% endif %}
           </div>
         {% else %}
-          <p class="text-muted italic">Данные о здоровье не заполнены.</p>
+          <p class="text-muted">Данные о здоровье не заполнены.</p>
         {% endif %}
       </div>
     </div>
@@ -225,7 +275,9 @@
             <li class="list-custom-item">
               <span class="small fw-bold">{{ doc.get_type_display }}</span>
               {% if doc.scan %}
-                <a href="{{ doc.scan.url }}" target="_blank" class="btn btn-sm btn-primary py-0 px-2"><i class="fa-solid fa-eye"></i></a>
+                <a href="{{ doc.scan.url }}" target="_blank" class="btn btn-sm btn-primary py-0 px-2">
+                  <i class="fa-solid fa-eye"></i>
+                </a>
               {% else %}
                 <i class="fa-solid fa-circle-xmark text-danger"></i>
               {% endif %}
@@ -248,7 +300,9 @@
                 <div class="small fw-bold">№ {{ dogovor.number }}</div>
                 <div class="small text-muted">{{ dogovor.date_of_conclusion|date:"d.m.Y" }}</div>
               </div>
-              <i class="fa-solid fa-check-circle text-success"></i>
+              <a href="{% url 'dogovor_detail' dogovor.pk %}" class="text-primary">
+                <i class="fa-solid fa-eye"></i>
+              </a>
             </li>
           {% empty %}
             <p class="text-muted small">Договоры еще не заключены.</p>
@@ -269,6 +323,16 @@
       <i class="fa-solid fa-arrow-left me-2"></i> К списку
     </a>
     <div class="ms-auto d-flex gap-2">
+      <!-- Кнопка зачисления (только для абитуриентов) -->
+      {% if object.status == 'abiturient' %}
+      <form method="POST" action="{% url 'enroll_student' object.pk %}" style="display: inline;">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-enroll" onclick="return confirm('Зачислить {{ object.fio }} в студенты?')">
+          <i class="fa-solid fa-graduation-cap me-2"></i> Зачислить
+        </button>
+      </form>
+      {% endif %}
+      
       <a href="{% url 'abiturient_update' object.pk %}" class="btn btn-edit">
         <i class="fa-solid fa-pen-to-square me-2"></i> Редактировать
       </a>

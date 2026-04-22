@@ -16,6 +16,7 @@ from django.db.models import Q
 from django.http import JsonResponse, HttpResponseForbidden
 from django import forms
 from dal_select2.views import Select2QuerySetView 
+from django.utils import timezone
 
 # Импорты моделей
 from .models import (
@@ -49,9 +50,9 @@ DocumentFormSet = inlineformset_factory(
     can_delete=True
 )
 
-# -----------------------------
+# ------------
 # Авторизация
-# -----------------------------
+# ------------
 class CustomLoginView(LoginView):
     template_name = 'main_app/login.html'
     authentication_form = CustomAuthForm
@@ -66,17 +67,19 @@ def logout_view(request):
     messages.info(request, "Вы вышли из системы.")
     return redirect('login')
 
-# -----------------------------
+# ---------------------------
 # Главная панель (Dashboard)
-# -----------------------------
+# ---------------------------
 @login_required
 @user_passes_test(is_staff_check)
 def dashboard(request):
     context = {
         'abiturient_count': Abiturient.objects.count(),
+        'student_count': Abiturient.objects.filter(status='student').count(),
         'dogovor_count': Dogovor.objects.count(),
         'recent_abiturients': Abiturient.objects.all().order_by('-pk')[:3],
         'recent_dogovors': Dogovor.objects.all().order_by('-pk')[:3],
+        'recent_students': Abiturient.objects.filter(status='student').order_by('-enrollment_date')[:3],
         'has_any_search_data': Abiturient.objects.exists() or Dogovor.objects.exists(), 
     }
     return render(request, 'main_app/dashboard.html', context)
@@ -86,9 +89,11 @@ def dashboard(request):
 # -----------------------------
 class AbiturientFilter(django_filters.FilterSet):
     fio = django_filters.CharFilter(lookup_expr='icontains', label='ФИО')
+    status = django_filters.ChoiceFilter(choices=Abiturient.STATUS_CHOICES, label='Статус')
+    
     class Meta:
         model = Abiturient
-        fields = ['fio', 'class_of_entry', 'specialnost']
+        fields = ['fio', 'class_of_entry', 'specialnost', 'status']
 
 class AbiturientListView(LoginRequiredMixin, StaffRequiredMixin, FilterView):
     model = Abiturient
@@ -183,9 +188,9 @@ class AbiturientDeleteView(LoginRequiredMixin, StaffRequiredMixin, DeleteView):
     template_name = 'main_app/abiturient_confirm_delete.html'
     success_url = reverse_lazy('abiturient_list')
 
-# -----------------------------
+# ---------
 # Договоры
-# -----------------------------
+# ---------
 class DogovorListView(LoginRequiredMixin, StaffRequiredMixin, ListView):
     model = Dogovor
     template_name = 'main_app/dogovor_list.html'
@@ -204,7 +209,8 @@ class DogovorCreateView(LoginRequiredMixin, StaffRequiredMixin, CreateView):
     def get_initial(self):
         initial = super().get_initial()
         abiturient_id = self.request.GET.get('abiturient') or self.kwargs.get('abiturient_id')
-        if abiturient_id: initial['abiturient'] = get_object_or_404(Abiturient, pk=abiturient_id)
+        if abiturient_id: 
+            initial['abiturient'] = get_object_or_404(Abiturient, pk=abiturient_id)
         return initial
 
     def get_success_url(self):
@@ -214,6 +220,7 @@ class DogovorUpdateView(LoginRequiredMixin, StaffRequiredMixin, UpdateView):
     model = Dogovor
     form_class = DogovorForm
     template_name = 'main_app/dogovor_form.html'
+    
     def get_success_url(self):
         return reverse_lazy('abiturient_detail', kwargs={'pk': self.object.abiturient.pk})
 
@@ -222,14 +229,34 @@ class DogovorDeleteView(LoginRequiredMixin, StaffRequiredMixin, DeleteView):
     template_name = 'main_app/dogovor_confirm_delete.html'
     success_url = reverse_lazy('dogovor_list')
 
-# -----------------------------
+# --------------------
+# Зачисление студента
+# --------------------
+@login_required
+@user_passes_test(is_staff_check)
+@require_POST
+def enroll_student(request, pk):
+    """Перевод абитуриента в студенты"""
+    abiturient = get_object_or_404(Abiturient, pk=pk)
+    if abiturient.status == 'abiturient':
+        abiturient.status = 'student'
+        abiturient.enrollment_date = timezone.now().date()
+        abiturient.save()
+        messages.success(request, f"{abiturient.fio} зачислен в студенты!")
+    else:
+        messages.warning(request, f"{abiturient.fio} уже имеет статус {abiturient.get_status_display()}")
+    return redirect('abiturient_detail', pk=pk)
+
+# --------------------
 # Документы и Новости
-# -----------------------------
+# --------------------
 class DocumentCreateView(LoginRequiredMixin, StaffRequiredMixin, CreateView):
     model = Document
     form_class = DocumentForm
     template_name = 'main_app/document_form.html'
-    def get_success_url(self): return reverse_lazy('abiturient_list')
+    
+    def get_success_url(self): 
+        return reverse_lazy('abiturient_list')
 
 @login_required
 def get_news(request):
@@ -241,16 +268,17 @@ def get_news(request):
 @require_POST
 def save_news(request):
     """Сохранение новостей (только для персонала)."""
-    if not request.user.is_staff: return JsonResponse({'success': False}, status=403)
+    if not request.user.is_staff: 
+        return JsonResponse({'success': False}, status=403)
     content = request.POST.get('content', '').strip()
     news, _ = News.objects.get_or_create(pk=1)
     news.content = content
     news.save()
     return JsonResponse({'success': True})
 
-# -----------------------------
+# -----------------------
 # Поиск (Строго защищен)
-# -----------------------------
+# -----------------------
 @login_required
 @require_GET
 def search_students(request):
@@ -260,12 +288,26 @@ def search_students(request):
     q = request.GET.get('q', '').strip()
     results = []
     if q:
-        abits = Abiturient.objects.filter(Q(fio__icontains=q) | Q(phone__icontains=q))[:5]
+        # Ищем абитуриентов и студентов (исключая отчисленных)
+        abits = Abiturient.objects.filter(
+            Q(fio__icontains=q) | Q(phone__icontains=q)
+        ).exclude(status='expelled')[:5]
         for a in abits:
-            results.append({'id': a.id, 'fio': a.fio, 'phone': a.phone, 'type': 'abiturient'})
+            results.append({
+                'id': a.id, 
+                'fio': a.fio, 
+                'phone': a.phone, 
+                'status': a.get_status_display(),
+                'type': 'abiturient'
+            })
         dogs = Dogovor.objects.filter(Q(number__icontains=q) | Q(abiturient__fio__icontains=q))[:5]
         for d in dogs:
-            results.append({'id': d.id, 'number': d.number, 'abiturient_fio': d.abiturient.fio if d.abiturient else '', 'type': 'dogovor'})
+            results.append({
+                'id': d.id, 
+                'number': d.number, 
+                'abiturient_fio': d.abiturient.fio if d.abiturient else '', 
+                'type': 'dogovor'
+            })
     return JsonResponse({'results': results})
 
 @login_required
@@ -278,21 +320,25 @@ def search_students_legacy(request):
 class AbiturientAutocomplete(LoginRequiredMixin, StaffRequiredMixin, Select2QuerySetView):
     def get_queryset(self):
         qs = Abiturient.objects.all().order_by('fio') 
-        if self.q: qs = qs.filter(fio__icontains=self.q)
+        if self.q: 
+            qs = qs.filter(fio__icontains=self.q)
         return qs
 
 class RoditelAutocomplete(LoginRequiredMixin, StaffRequiredMixin, Select2QuerySetView):
     def get_queryset(self):
         qs = Roditel.objects.all()
         forwarded = self.forwarded.get('abiturient', None)
-        if forwarded: qs = qs.filter(abiturientroditel__abiturient_id=forwarded)
-        if self.q: qs = qs.filter(fio__icontains=self.q)
+        if forwarded: 
+            qs = qs.filter(abiturientroditel__abiturient_id=forwarded)
+        if self.q: 
+            qs = qs.filter(fio__icontains=self.q)
         return qs
 
 class SpecialnostAutocomplete(LoginRequiredMixin, StaffRequiredMixin, Select2QuerySetView):
     def get_queryset(self):
         qs = Specialnost.objects.all()
-        if self.q: qs = qs.filter(Q(name__icontains=self.q) | Q(code__icontains=self.q))
+        if self.q: 
+            qs = qs.filter(Q(name__icontains=self.q) | Q(code__icontains=self.q))
         return qs
 
 # -----------------------------
@@ -301,17 +347,21 @@ class SpecialnostAutocomplete(LoginRequiredMixin, StaffRequiredMixin, Select2Que
 @login_required
 @require_GET
 def get_parents_by_abiturient_ajax(request, abiturient_id):
-    if not request.user.is_staff: return JsonResponse({'parents': []}, status=403)
+    if not request.user.is_staff: 
+        return JsonResponse({'parents': []}, status=403)
     relations = AbiturientRoditel.objects.filter(abiturient_id=abiturient_id).select_related('roditel')
     parents = [{'id': r.roditel.id, 'fio': r.roditel.fio} for r in relations]
     return JsonResponse({'parents': parents})
 
 @login_required
 def get_abit_info_ajax(request, abit_id):
-    if not request.user.is_staff: return JsonResponse({'error': 'Forbidden'}, status=403)
+    if not request.user.is_staff: 
+        return JsonResponse({'error': 'Forbidden'}, status=403)
     abit = get_object_or_404(Abiturient, pk=abit_id)
     spec_code = abit.specialnost.code if abit.specialnost and abit.specialnost.code else "00"
     return JsonResponse({
         'spec_code': spec_code,
-        'abit_id': abit.id
+        'abit_id': abit.id,
+        'status': abit.status,
+        'status_display': abit.get_status_display()
     })
